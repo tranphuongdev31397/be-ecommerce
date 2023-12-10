@@ -2,11 +2,9 @@
 
 const { includes } = require("lodash");
 const ApiKeyService = require("../services/apiKey.service");
+const { HEADER } = require("../constants/request");
 
-const HEADER = {
-  API_KEY: "x-api-key",
-  AUTHORIZATION: "authorization",
-};
+
 
 const checkApiKeys = async (req, res, next) => {
   try {
