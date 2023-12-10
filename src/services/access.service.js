@@ -3,9 +3,10 @@ const crypto = require("node:crypto");
 const KeyTokenService = require("./keyToken.service");
 
 const shopModel = require("../models/shop.model");
-const { createTokenPair } = require("../auth/authUltils");
+const { createTokenPair, generateToken } = require("../auth/authUltils");
 const { getInitData } = require("../utils");
-const { BadRequestError } = require("../core/error.response");
+const { BadRequestError, AuthFailError } = require("../core/error.response");
+const ShopService = require("./shop.service");
 
 const ROLE = {
   SHOP: "SHOP",
@@ -14,6 +15,37 @@ const ROLE = {
   ADMIN: "ADMIN",
 };
 class AccessService {
+  static login = async ({ email, password, refreshToken = null }) => {
+    /**
+     * 1. Find email is available
+     * 2. Compare password
+     * 3. Create Tokens and Save
+     * 4. Generate Tokens
+     * 5. Get Data and return Login
+     */
+    const foundShop = await ShopService.findEmail(email, [
+      "_id",
+      "name",
+      "password",
+      "email"
+    ]);
+
+    if(!foundShop){
+      throw new BadRequestError("Shop not found!")
+    }
+
+    const matchPassword = await bcrypt.compare(password, foundShop.password)
+    if(!matchPassword){
+      throw new AuthFailError("Password not match!")
+    }
+
+    const tokens = await generateToken(foundShop)
+
+    return {
+      data: foundShop,
+      tokens
+    }
+  };
   static signUp = async (body) => {
     const { name, email, password } = body;
 
@@ -48,7 +80,6 @@ class AccessService {
         privateKey,
       });
 
-      console.log(keyStore);
 
       if (!keyStore) {
         // throw error

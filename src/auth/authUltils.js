@@ -1,5 +1,9 @@
 "use strict";
 const JWT = require("jsonwebtoken");
+const KeyTokenService = require("../services/keyToken.service");
+const { AuthFailError } = require("../core/error.response");
+const crypto = require("node:crypto");
+
 
 const createTokenPair = async (payload, publicToken, privateKey) => {
   try {
@@ -27,6 +31,31 @@ const createTokenPair = async (payload, publicToken, privateKey) => {
   }
 };
 
+const generateToken = async (shop) => {
+  const publicKey = crypto.randomBytes(64).toString("hex");
+  const privateKey = crypto.randomBytes(64).toString("hex");
+
+  const tokens = await createTokenPair(
+    { userId: shop._id, email: shop.email, name: shop.name },
+    publicKey,
+    privateKey
+  );
+
+  const keyStore = await KeyTokenService.createKeyToken({
+    userId: shop._id,
+    refreshToken: tokens.refreshToken,
+    publicKey,
+    privateKey,
+  });
+
+  if (!keyStore) {
+    throw new AuthFailError();
+  }
+
+  return tokens;
+};
+
 module.exports = {
   createTokenPair,
+  generateToken
 };
