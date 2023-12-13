@@ -7,6 +7,7 @@ const { createTokenPair, generateToken } = require("../auth/authUltils");
 const { getInitData } = require("../utils");
 const { BadRequestError, AuthFailError } = require("../core/error.response");
 const ShopService = require("./shop.service");
+const { includes } = require("lodash");
 
 const ROLE = {
   SHOP: "SHOP",
@@ -27,24 +28,28 @@ class AccessService {
       "_id",
       "name",
       "password",
-      "email"
+      "email",
     ]);
 
-    if(!foundShop){
-      throw new BadRequestError("Shop not found!")
+    if (!foundShop) {
+      throw new BadRequestError("Shop not found!");
     }
 
-    const matchPassword = await bcrypt.compare(password, foundShop.password)
-    if(!matchPassword){
-      throw new AuthFailError("Password not match!")
+    const matchPassword = await bcrypt.compare(password, foundShop.password);
+    if (!matchPassword) {
+      throw new AuthFailError("Password not match!");
     }
 
-    const tokens = await generateToken(foundShop)
+    const tokens = await generateToken(foundShop);
 
     return {
       data: foundShop,
-      tokens
-    }
+      tokens,
+    };
+  };
+
+  static logout = async (keyStore) => {
+    return await KeyTokenService.removeKeyById(keyStore._id);
   };
   static signUp = async (body) => {
     const { name, email, password } = body;
@@ -80,7 +85,6 @@ class AccessService {
         privateKey,
       });
 
-
       if (!keyStore) {
         // throw error
         return {
@@ -107,6 +111,52 @@ class AccessService {
     return {
       code: 201, // CREATED success
       metadata: null,
+    };
+  };
+
+  static refreshToken = async ({ refreshToken, user, keyStore }) => {
+    const { userId, email } = user;
+
+    console.log(":::::KEY", keyStore);
+    if (includes(keyStore.refreshTokenUsed, refreshToken)) {
+      await KeyTokenService.removeKeyByUserId(userId);
+
+      throw new BadRequestError("Some thing when wrong! Please login again");
+    }
+
+    if (refreshToken !== keyStore.refreshToken || !keyStore) {
+      throw new AuthFailError("Invalid token!");
+    }
+
+    const foundShop = await ShopService.findEmail(email, [
+      "_id",
+      "name",
+      "password",
+      "email",
+    ]);
+
+    if (!foundShop) {
+      throw new BadRequestError("Shop isn't register!");
+    }
+
+    const tokens = await createTokenPair(
+      { userId: foundShop._id, email: foundShop.email, name: foundShop.name },
+      keyStore.publicKey,
+      keyStore.privateKey
+    );
+
+    await keyStore.updateOne({
+      $set: {
+        refreshToken: tokens.refreshToken,
+      },
+      $addToSet: {
+        refreshTokenUsed: refreshToken,
+      },
+    });
+
+    return {
+      data: foundShop,
+      tokens,
     };
   };
 }
