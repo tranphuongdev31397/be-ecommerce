@@ -1,20 +1,20 @@
-const bcrypt = require("bcrypt");
-const crypto = require("node:crypto");
-const KeyTokenService = require("./keyToken.service");
+const bcrypt = require('bcrypt')
+const crypto = require('node:crypto')
+const KeyTokenService = require('./keyToken.service')
 
-const shopModel = require("../models/shop.model");
-const { createTokenPair, generateToken } = require("../auth/authUltils");
-const { getInitData } = require("../utils");
-const { BadRequestError, AuthFailError } = require("../core/error.response");
-const ShopService = require("./shop.service");
-const { includes } = require("lodash");
+const shopModel = require('../models/shop.model')
+const { createTokenPair, generateToken } = require('../auth/authUltils')
+const { getInitData } = require('../utils')
+const { BadRequestError, AuthFailError } = require('../core/error.response')
+const ShopService = require('./shop.service')
+const { includes } = require('lodash')
 
 const ROLE = {
-  SHOP: "SHOP",
-  WRITER: "WRITER",
-  EDITOR: "EDITOR",
-  ADMIN: "ADMIN",
-};
+  SHOP: 'SHOP',
+  WRITER: 'WRITER',
+  EDITOR: 'EDITOR',
+  ADMIN: 'ADMIN',
+}
 class AccessService {
   static login = async ({ email, password, refreshToken = null }) => {
     /**
@@ -25,49 +25,49 @@ class AccessService {
      * 5. Get Data and return Login
      */
     const foundShop = await ShopService.findEmail(email, [
-      "_id",
-      "name",
-      "password",
-      "email",
-    ]);
+      '_id',
+      'name',
+      'password',
+      'email',
+    ])
 
     if (!foundShop) {
-      throw new BadRequestError("Shop not found!");
+      throw new BadRequestError('Shop not found!')
     }
 
-    const matchPassword = await bcrypt.compare(password, foundShop.password);
+    const matchPassword = await bcrypt.compare(password, foundShop.password)
     if (!matchPassword) {
-      throw new AuthFailError("Password not match!");
+      throw new AuthFailError('Password not match!')
     }
 
-    const tokens = await generateToken(foundShop);
+    const tokens = await generateToken(foundShop)
 
     return {
       data: foundShop,
       tokens,
-    };
-  };
+    }
+  }
 
-  static logout = async (keyStore) => {
-    return await KeyTokenService.removeKeyById(keyStore._id);
-  };
-  static signUp = async (body) => {
-    const { name, email, password } = body;
+  static logout = async keyStore => {
+    return await KeyTokenService.removeKeyById(keyStore._id)
+  }
+  static signUp = async body => {
+    const { name, email, password } = body
 
-    const holderShop = await shopModel.findOne({ email }).lean();
+    const holderShop = await shopModel.findOne({ email }).lean()
 
     if (holderShop) {
-      throw new BadRequestError("Shop already registered!");
+      throw new BadRequestError('Shop already registered!')
     }
     // Password hash
-    const passwordHash = await bcrypt.hash(password, 10);
+    const passwordHash = await bcrypt.hash(password, 10)
 
     const newShop = await shopModel.create({
       name,
       email,
       password: passwordHash,
       roles: [ROLE.SHOP],
-    });
+    })
 
     if (newShop) {
       /*/
@@ -76,74 +76,74 @@ class AccessService {
         Sign in with sign in func
         /**/
 
-      const publicKey = crypto.randomBytes(64).toString("hex");
-      const privateKey = crypto.randomBytes(64).toString("hex");
+      const publicKey = crypto.randomBytes(64).toString('hex')
+      const privateKey = crypto.randomBytes(64).toString('hex')
 
       const keyStore = await KeyTokenService.createKeyToken({
         userId: newShop._id,
         publicKey,
         privateKey,
-      });
+      })
 
       if (!keyStore) {
         // throw error
         return {
-          code: "xxx",
-          message: "keyStore created failed",
-        };
+          code: 'xxx',
+          message: 'keyStore created failed',
+        }
       }
 
       const tokens = await createTokenPair(
         { userId: newShop._id, email, name },
         publicKey,
-        privateKey
-      );
+        privateKey,
+      )
 
       return {
         data: getInitData({
           object: newShop,
-          fields: ["_id", "name", "email"],
+          fields: ['_id', 'name', 'email'],
         }),
         tokens,
-      };
+      }
     }
 
     return {
       code: 201, // CREATED success
       metadata: null,
-    };
-  };
+    }
+  }
 
   static refreshToken = async ({ refreshToken, user, keyStore }) => {
-    const { userId, email } = user;
+    const { userId, email } = user
 
-    console.log(":::::KEY", keyStore);
     if (includes(keyStore.refreshTokenUsed, refreshToken)) {
-      await KeyTokenService.removeKeyByUserId(userId);
+      // Can write the code to send email for user to warning
+      await KeyTokenService.removeKeyByUserId(userId)
 
-      throw new BadRequestError("Some thing when wrong! Please login again");
+      throw new BadRequestError('Some thing when wrong! Please login again')
     }
 
     if (refreshToken !== keyStore.refreshToken || !keyStore) {
-      throw new AuthFailError("Invalid token!");
+      throw new AuthFailError('Invalid token!')
     }
 
     const foundShop = await ShopService.findEmail(email, [
-      "_id",
-      "name",
-      "password",
-      "email",
-    ]);
+      '_id',
+      'name',
+      'password',
+      'email',
+    ])
 
     if (!foundShop) {
-      throw new BadRequestError("Shop isn't register!");
+      throw new BadRequestError("Shop isn't register!")
     }
 
     const tokens = await createTokenPair(
       { userId: foundShop._id, email: foundShop.email, name: foundShop.name },
       keyStore.publicKey,
-      keyStore.privateKey
-    );
+      keyStore.privateKey,
+    )
 
     await keyStore.updateOne({
       $set: {
@@ -152,13 +152,13 @@ class AccessService {
       $addToSet: {
         refreshTokenUsed: refreshToken,
       },
-    });
+    })
 
     return {
       data: foundShop,
       tokens,
-    };
-  };
+    }
+  }
 }
 
-module.exports = AccessService;
+module.exports = AccessService

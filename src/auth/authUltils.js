@@ -1,60 +1,60 @@
-"use strict";
-const JWT = require("jsonwebtoken");
-const KeyTokenService = require("../services/keyToken.service");
-const { AuthFailError, NotFoundError } = require("../core/error.response");
-const crypto = require("node:crypto");
-const asyncHandler = require("../helpers/asyncHandler");
-const { HEADER } = require("../constants/request");
+'use strict'
+const JWT = require('jsonwebtoken')
+const KeyTokenService = require('../services/keyToken.service')
+const { AuthFailError, NotFoundError } = require('../core/error.response')
+const crypto = require('node:crypto')
+const asyncHandler = require('../helpers/asyncHandler')
+const { HEADER } = require('../constants/request')
 
 const createTokenPair = async (payload, publicToken, privateKey) => {
   try {
     const accessToken = await JWT.sign(payload, publicToken, {
-      expiresIn: "10 seconds",
-    });
+      expiresIn: '3 days',
+    })
     const refreshToken = await JWT.sign(payload, privateKey, {
-      expiresIn: "20 seconds",
-    });
+      expiresIn: '7 days',
+    })
 
     // Verify public Token
     if (publicToken) {
       JWT.verify(accessToken, publicToken, (err, decode) => {
         if (err) {
-          console.error("error verify", err);
+          console.error('error verify', err)
         } else {
-          console.log("decode verify", decode);
+          console.log('decode verify', decode)
         }
-      });
+      })
     }
 
-    return { accessToken, refreshToken };
+    return { accessToken, refreshToken }
   } catch (error) {
-    console.log(error);
+    console.log(error)
   }
-};
+}
 
-const generateToken = async (shop) => {
-  const publicKey = crypto.randomBytes(64).toString("hex");
-  const privateKey = crypto.randomBytes(64).toString("hex");
+const generateToken = async shop => {
+  const publicKey = crypto.randomBytes(64).toString('hex')
+  const privateKey = crypto.randomBytes(64).toString('hex')
 
   const tokens = await createTokenPair(
     { userId: shop._id, email: shop.email, name: shop.name },
     publicKey,
-    privateKey
-  );
+    privateKey,
+  )
 
   const keyStore = await KeyTokenService.createKeyToken({
     userId: shop._id,
     refreshToken: tokens.refreshToken,
     publicKey,
     privateKey,
-  });
+  })
 
   if (!keyStore) {
-    throw new AuthFailError();
+    throw new AuthFailError()
   }
 
-  return tokens;
-};
+  return tokens
+}
 
 const authenticate = asyncHandler(async (req, res, next) => {
   /**
@@ -65,40 +65,40 @@ const authenticate = asyncHandler(async (req, res, next) => {
    * 5. Save keystore in req
    */
 
-  const userId = req.headers[HEADER.CLIENT_ID]?.toString();
+  const userId = req.headers[HEADER.CLIENT_ID]?.toString()
   if (!userId) {
-    throw new AuthFailError("Invalid request!");
+    throw new AuthFailError('Invalid request!')
   }
 
   // Find keyStore
-  const keyStore = await KeyTokenService.findByUserId(userId);
+  const keyStore = await KeyTokenService.findByUserId(userId)
 
   if (!keyStore) {
-    throw new NotFoundError("Key store not found!");
+    throw new NotFoundError('Key store not found!')
   }
 
   //Verify token
 
   try {
-    const token = req.headers[HEADER.AUTHORIZATION]?.toString();
+    const token = req.headers[HEADER.AUTHORIZATION]?.toString()
 
     if (!token) {
-      throw new AuthFailError("Authorization!");
+      throw new AuthFailError('Authorization!')
     }
 
-    const decodeUser = JWT.verify(token, keyStore?.publicKey);
+    const decodeUser = JWT.verify(token, keyStore?.publicKey)
 
     if (decodeUser.userId !== userId) {
-      throw new AuthFailError("Invalid UserId");
+      throw new AuthFailError('Invalid UserId')
     }
 
-    req.keyStore = keyStore;
+    req.keyStore = keyStore
 
-    next();
+    next()
   } catch (error) {
-    throw error;
+    throw error
   }
-});
+})
 
 const authenticateV2 = asyncHandler(async (req, res, next) => {
   /**
@@ -117,24 +117,24 @@ const authenticateV2 = asyncHandler(async (req, res, next) => {
    */
 
   //Verify token
-  const token = req.headers[HEADER.AUTHORIZATION]?.toString();
+  const token = req.headers[HEADER.AUTHORIZATION]?.toString()
 
   if (!token) {
-    throw new AuthFailError("Authorization!");
+    throw new AuthFailError('Authorization!')
   }
 
-  const userDecoded = await JWT.decode(token);
+  const userDecoded = await JWT.decode(token)
 
   if (!userDecoded) {
-    throw new AuthFailError("Invalid Request");
+    throw new AuthFailError('Invalid Request')
   }
 
   // Find keyStore
-  const keyStore = await KeyTokenService.findByUserId(userDecoded?.userId);
+  const keyStore = await KeyTokenService.findByUserId(userDecoded?.userId)
 
-  const refreshToken = req.headers?.[HEADER.REFRESH_TOKEN]?.toString();
+  const refreshToken = req.headers?.[HEADER.REFRESH_TOKEN]?.toString()
   if (!keyStore) {
-    throw new AuthFailError("Key store not found");
+    throw new AuthFailError('Key store not found')
   }
 
   try {
@@ -143,34 +143,34 @@ const authenticateV2 = asyncHandler(async (req, res, next) => {
     if (refreshToken) {
       JWT.verify(refreshToken, keyStore?.privateKey, (error, refreshDecode) => {
         if (error) {
-          throw new AuthFailError("Token expired!, please login again!");
+          throw new AuthFailError('Token expired!, please login again!')
         }
-        req.user = refreshDecode;
-        req.refreshToken = refreshToken;
-        req.keyStore = keyStore;
-        next();
-        return;
-      });
+        req.user = refreshDecode
+        req.refreshToken = refreshToken
+        req.keyStore = keyStore
+        next()
+        return
+      })
     } else {
       //Verify Access
       JWT.verify(token, keyStore?.publicKey, (error, accessDecode) => {
         if (error) {
-          throw new AuthFailError("Token expired!", 409);
+          throw new AuthFailError('Token expired!', 409)
         }
-        req.user = accessDecode;
-        req.refreshToken = refreshToken;
-        req.keyStore = keyStore;
-        next();
-      });
+        req.user = accessDecode
+        req.refreshToken = refreshToken
+        req.keyStore = keyStore
+        next()
+      })
     }
   } catch (error) {
-    throw error;
+    throw error
   }
-});
+})
 
 module.exports = {
   createTokenPair,
   generateToken,
   authenticate,
   authenticateV2,
-};
+}
