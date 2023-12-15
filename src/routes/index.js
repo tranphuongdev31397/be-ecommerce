@@ -1,17 +1,19 @@
-"use strict";
+'use strict'
 
-const express = require("express");
+const express = require('express')
 
-const router = express.Router();
+const router = express.Router()
 
-const { checkApiKeys, checkPermission } = require("../auth/checkAuth");
+const { checkApiKeys, checkPermission } = require('../auth/checkAuth')
 
 //middleware
 // check api key
-router.use(checkApiKeys);
+router.use(checkApiKeys)
 // check permission
-router.use(checkPermission("0000"));
+router.use(checkPermission('0000'))
 
-router.use("/v1/api", require("./access"));
+router.use('/v1/api', require('./access'))
 
-module.exports = router;
+router.use('/v1/api/product', require('./product'))
+
+module.exports = router

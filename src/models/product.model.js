@@ -1,4 +1,5 @@
-const { Schema, model } = require('mongoose') // Erase if already required
+const { Schema, model } = require('mongoose')
+const PRODUCT_TYPE = require('../constants/product')
 
 const COLLECTION_NAME = 'Products'
 const DOCUMENT_NAME = 'Product'
@@ -13,7 +14,11 @@ const productSchema = new Schema(
     product_type: {
       type: String,
       required: true,
-      enum: ['Electronics', 'Clothing', 'Furniture'],
+      enum: [
+        PRODUCT_TYPE.ELECTRONIC,
+        PRODUCT_TYPE.CLOTHING,
+        PRODUCT_TYPE.FURNITURE,
+      ],
     },
     product_shop: { type: Schema.Types.ObjectId, ref: 'Shop' },
     product_attributes: { type: Schema.Types.Mixed, required: true },
@@ -31,6 +36,7 @@ const clothingSchema = new Schema(
     brand: { type: String, require: true },
     size: String,
     material: String,
+    product_shop: { type: Schema.Types.ObjectId, ref: 'Shop' },
   },
   {
     collection: 'Clothings',
@@ -46,9 +52,26 @@ const electronicSchema = new Schema(
     },
     model: String,
     color: String,
+    product_shop: { type: Schema.Types.ObjectId, ref: 'Shop' },
   },
   {
     collection: 'Electronics',
+    timestamps: true,
+  },
+)
+
+const furnitureSchema = new Schema(
+  {
+    manufacturer: {
+      type: String,
+      require: true,
+    },
+    model: String,
+    color: String,
+    product_shop: { type: Schema.Types.ObjectId, ref: 'Shop' },
+  },
+  {
+    collection: 'Furnitures',
     timestamps: true,
   },
 )
@@ -58,4 +81,5 @@ module.exports = {
   productModel: model(DOCUMENT_NAME, productSchema),
   productClothingModel: model('Clothing', clothingSchema),
   productElectronicModel: model('Electronic', electronicSchema),
+  productFurnitureModel: model('Furniture', furnitureSchema),
 }
