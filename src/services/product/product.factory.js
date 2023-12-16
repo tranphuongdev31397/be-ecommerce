@@ -15,7 +15,6 @@ class ProductFactory {
     if (!ProductTypeClass) {
       throw new BadRequestError(`Invalid product type ${type}`)
     }
-
     return new ProductTypeClass(payload).createProduct()
   }
 }

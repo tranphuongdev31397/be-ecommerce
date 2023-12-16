@@ -19,6 +19,8 @@ class ProductService {
     product_type,
     product_shop,
     product_attributes,
+    product_ratings,
+    product_variations,
   }) {
     this.product_name = product_name
     this.product_thumb = product_thumb
@@ -28,6 +30,8 @@ class ProductService {
     this.product_type = product_type
     this.product_shop = product_shop
     this.product_attributes = product_attributes
+    this.product_ratings = product_ratings
+    this.product_variations = product_variations
   }
 
   async createProduct(product_id) {
