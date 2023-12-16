@@ -14,6 +14,51 @@ class ProductController {
       }),
     }).send(res)
   }
+
+  getAllProductsForShop = async (req, res, next) => {
+    const { _limit, _skip, ...query } = req.query
+    const { userId } = req.user
+    new SuccessResponse({
+      metadata: await ProductFactory.getAllProductsForShop({
+        query: { ...query, product_shop: userId },
+        limit: _limit,
+        skip: _skip,
+      }),
+    }).send(res)
+  }
+
+  searchProductByUser = async (req, res, next) => {
+    const { _limit, _skip, keySearch } = req.query
+
+    new SuccessResponse({
+      metadata: await ProductFactory.searchProductByUser({
+        keySearch,
+        limit: _limit,
+        skip: _skip,
+      }),
+    }).send(res)
+  }
+
+  publicProductByShop = async (req, res, next) => {
+    const _id = req.params.id
+    const { userId } = req.user
+    new SuccessResponse({
+      metadata: await ProductFactory.publishProduct({
+        product_shop: userId,
+        productId: _id,
+      }),
+    }).send(res)
+  }
+  unpublishProductByShop = async (req, res, next) => {
+    const _id = req.params.id
+    const { userId } = req.user
+    new SuccessResponse({
+      metadata: await ProductFactory.unPublishProduct({
+        product_shop: userId,
+        productId: _id,
+      }),
+    }).send(res)
+  }
 }
 
 module.exports = new ProductController()

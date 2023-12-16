@@ -53,6 +53,11 @@ const productSchema = new Schema(
     timestamps: true,
   },
 )
+// Create index for search
+productSchema.index({
+  product_name: 'text',
+  product_description: 'text',
+})
 // Middleware before save into DB
 productSchema.pre('save', function (next) {
   this.product_slug = slugify(this.product_name, {
