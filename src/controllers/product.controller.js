@@ -15,14 +15,29 @@ class ProductController {
     }).send(res)
   }
 
-  getAllProductsForShop = async (req, res, next) => {
-    const { _limit, _skip, ...query } = req.query
-    const { userId } = req.user
+  getAllProducts = async (req, res, next) => {
+    const { _limit, _page, filter, sort, select } = req.query
     new SuccessResponse({
-      metadata: await ProductFactory.getAllProductsForShop({
-        query: { ...query, product_shop: userId },
+      metadata: await ProductFactory.getAllProducts({
+        filter,
+        sort,
+        select,
+        // Pagination
         limit: _limit,
-        skip: _skip,
+        page: _page,
+      }),
+    }).send(res)
+  }
+
+  getDetailProduct = async (req, res, next) => {
+    const _id = req.params.id
+    const { unSelect } = req.query
+    console.log('QUERY:::', unSelect)
+
+    new SuccessResponse({
+      metadata: await ProductFactory.getDetailProduct({
+        productId: _id,
+        unSelect,
       }),
     }).send(res)
   }
@@ -39,6 +54,17 @@ class ProductController {
     }).send(res)
   }
 
+  getAllProductsForShop = async (req, res, next) => {
+    const { _limit, _skip, ...query } = req.query
+    const { userId } = req.user
+    new SuccessResponse({
+      metadata: await ProductFactory.getAllProductsForShop({
+        query: { ...query, product_shop: userId },
+        limit: _limit,
+        skip: _skip,
+      }),
+    }).send(res)
+  }
   publicProductByShop = async (req, res, next) => {
     const _id = req.params.id
     const { userId } = req.user

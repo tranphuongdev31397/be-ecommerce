@@ -8,6 +8,7 @@ const {
   productClothingModel,
   productElectronicModel,
 } = require('../product.model')
+const { getSelectData, getUnselectData } = require('../../utils')
 
 const findAllProductsForShop = ({ query, limit, skip }) => {
   return productModel
@@ -18,6 +19,28 @@ const findAllProductsForShop = ({ query, limit, skip }) => {
     .limit(limit)
     .lean()
     .exec()
+}
+
+const findAllProducts = async ({ limit, page, sort, filter, select }) => {
+  const skip = (page - 1) * limit
+  const sortBy = sort === 'ctime' ? { _id: -1 } : { _id: 1 }
+  return productModel
+    .find(filter)
+    .sort(sortBy)
+    .skip(skip)
+    .limit(limit)
+    .select(getSelectData(select))
+    .lean()
+}
+
+const getDetailProduct = async ({ productId, unSelect }) => {
+  return productModel
+    .findOne({
+      _id: new Types.ObjectId(productId),
+      isPublish: true,
+      isDraft: false,
+    })
+    .select(getUnselectData(unSelect))
 }
 
 const searchProductByUser = async ({ keySearch, limit, skip }) => {
@@ -87,4 +110,6 @@ module.exports = {
   publishProduct,
   unPublishProduct,
   searchProductByUser,
+  findAllProducts,
+  getDetailProduct,
 }
