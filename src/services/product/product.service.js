@@ -1,13 +1,18 @@
 'use strict'
 
+const { isEmpty } = require('lodash')
 const PRODUCT_TYPE = require('../../constants/product')
-const { BadRequestError } = require('../../core/error.response')
+const { BadRequestError, NotFoundError } = require('../../core/error.response')
 const {
   productModel,
   productClothingModel,
   productElectronicModel,
   productFurnitureModel,
 } = require('../../models/product.model')
+const {
+  updateProductByShop,
+} = require('../../models/repositories/product.repo')
+const { removeUndefinedAndNullNestedObject } = require('../../utils')
 
 class ProductService {
   constructor({
@@ -40,6 +45,15 @@ class ProductService {
       _id: product_id,
     })
   }
+
+  async updateProduct({ productId, shopId, payload }) {
+    return await updateProductByShop({
+      payload,
+      productId,
+      shopId,
+      model: productModel,
+    })
+  }
 }
 
 function generateProductTypeClass(model, productType) {
@@ -62,6 +76,45 @@ function generateProductTypeClass(model, productType) {
 
       return product
     }
+
+    async updateProduct({ productId, shopId }) {
+      //Shop can't update product's another shop
+
+      // Find product by productId and ShopId
+
+      if (!productId || !shopId) {
+        throw new BadRequestError(
+          'Invalid request, product not found or shop not found!',
+        )
+      }
+
+      const objectParams = this
+
+      if (objectParams?.product_attributes) {
+        const attributeUpdate = await updateProductByShop({
+          payload: objectParams.product_attributes,
+          shopId,
+          productId,
+          model,
+        })
+
+        if (!attributeUpdate) {
+          throw new BadRequestError('Product type update failed!')
+        }
+      }
+
+      const productUpdated = await super.updateProduct({
+        productId,
+        shopId,
+        payload: objectParams,
+      })
+
+      if (!productUpdated) {
+        throw new BadRequestError('Product update failed!')
+      }
+
+      return productUpdated
+    }
   }
 }
 
@@ -69,12 +122,10 @@ const Clothing = generateProductTypeClass(
   productClothingModel,
   PRODUCT_TYPE.CLOTHING,
 )
-
 const Electronics = generateProductTypeClass(
   productElectronicModel,
   PRODUCT_TYPE.ELECTRONIC,
 )
-
 const Furniture = generateProductTypeClass(
   productFurnitureModel,
   PRODUCT_TYPE.FURNITURE,

@@ -37,7 +37,7 @@ function removeUndefinedAndNullNestedObject(obj) {
   return _.transform(obj, (result, value, key) => {
     if (_.isObject(value)) {
       // Recursively clean nested objects
-      const cleanedValue = removeUndefinedAndNull(value)
+      const cleanedValue = removeUndefinedAndNullNestedObject(value)
       // Omit key if value is an empty object or array
       if (!(_.isEmpty(cleanedValue) && _.isArray(value))) {
         result[key] = cleanedValue

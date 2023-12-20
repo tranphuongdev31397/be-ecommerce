@@ -2,12 +2,7 @@
 
 const { Types } = require('mongoose')
 const { BadRequestError } = require('../../core/error.response')
-const {
-  productModel,
-  productFurnitureModel,
-  productClothingModel,
-  productElectronicModel,
-} = require('../product.model')
+const { productModel } = require('../product.model')
 const { getSelectData, getUnselectData } = require('../../utils')
 
 const findAllProductsForShop = ({ query, limit, skip }) => {
@@ -105,6 +100,27 @@ const unPublishProduct = async ({ product_shop, productId }) => {
   return unPublished
 }
 
+const updateProductByShop = async ({
+  productId,
+  shopId,
+  payload,
+  isNew = true,
+  model,
+  options = {},
+}) => {
+  const res = await model.findOneAndUpdate(
+    {
+      _id: new Types.ObjectId(productId),
+      product_shop: new Types.ObjectId(shopId),
+    },
+    payload,
+    { new: isNew },
+    { ...options },
+  )
+
+  return res
+}
+
 module.exports = {
   findAllProductsForShop,
   publishProduct,
@@ -112,4 +128,5 @@ module.exports = {
   searchProductByUser,
   findAllProducts,
   getDetailProduct,
+  updateProductByShop,
 }
