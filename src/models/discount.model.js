@@ -26,6 +26,10 @@ const discountSchema = new Schema(
       type: Number,
       required: true,
     },
+    discount_max_value: {
+      type: Number,
+      required: true,
+    },
     discount_code: {
       type: String,
       required: true,
@@ -37,6 +41,11 @@ const discountSchema = new Schema(
     discount_end_date: {
       type: Date,
       required: true,
+    },
+    discount_max_uses: {
+      type: Number,
+      required: true,
+      default: 0,
     },
     discount_uses_count: {
       type: Number,
