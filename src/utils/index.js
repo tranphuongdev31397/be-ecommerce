@@ -6,6 +6,10 @@ const getInitData = ({ fields = [], object = {} }) => {
   return _.pick(object, fields)
 }
 
+const omitData = ({ fields = [], object = {} }) => {
+  return _.omit(object, fields)
+}
+
 const getSelectData = (selectArr = []) => {
   return Object.fromEntries(_.map(selectArr, key => [key, 1]))
 }
@@ -51,6 +55,7 @@ function removeUndefinedAndNullNestedObject(obj) {
 
 module.exports = {
   getInitData,
+  omitData,
   getSelectData,
   getUnselectData,
   removeUndefinedAndNullNestedObject,

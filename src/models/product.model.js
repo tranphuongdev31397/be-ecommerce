@@ -13,6 +13,10 @@ const productSchema = new Schema(
     product_slug: String,
     product_price: { type: Number, required: true },
     product_quantity: { type: Number, required: true },
+    product_inventory: {
+      type: Schema.Types.ObjectId,
+      ref: 'Inventory',
+    },
     product_type: {
       type: String,
       required: true,

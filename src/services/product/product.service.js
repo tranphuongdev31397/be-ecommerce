@@ -12,7 +12,12 @@ const {
 const {
   updateProductByShop,
 } = require('../../models/repositories/product.repo')
-const { removeUndefinedAndNullNestedObject } = require('../../utils')
+const {
+  removeUndefinedAndNullNestedObject,
+  getInitData,
+  omitData,
+} = require('../../utils')
+const { insertInventory } = require('../../models/repositories/inventory.repo')
 
 class ProductService {
   constructor({
@@ -40,10 +45,29 @@ class ProductService {
   }
 
   async createProduct(product_id) {
-    return await productModel.create({
+    const inventoryCreated = await insertInventory({
+      productStock: this.product_quantity,
+      productId: product_id,
+      shopId: this.product_shop,
+    })
+
+    if (!inventoryCreated) {
+      throw new BadRequestError(
+        'Inventory product create failed, please try again!',
+      )
+    }
+
+    const productCreated = await productModel.create({
       ...this,
+      product_inventory: inventoryCreated._id,
       _id: product_id,
     })
+
+    if (!productCreated) {
+      throw new BadRequestError('Product create failed, please try again!')
+    }
+
+    return productCreated
   }
 
   async updateProduct({ productId, shopId, payload }) {
