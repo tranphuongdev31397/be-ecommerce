@@ -1,10 +1,14 @@
 'use strict'
 const moment = require('moment')
-const { APPLICABLE_PRODUCTS } = require('../constants/discount')
-const { BadRequestError } = require('../core/error.response')
+const { APPLICABLE_PRODUCTS, DISCOUNT_TYPE } = require('../constants/discount')
+const { BadRequestError, NotFoundError } = require('../core/error.response')
 const discountModel = require('../models/discount.model')
 const { convertToMongoObjectId } = require('../utils')
-const { updateDiscountByShop } = require('../models/repositories/discount.repo')
+const {
+  updateDiscountByShop,
+  checkDiscountCodeIsExist,
+} = require('../models/repositories/discount.repo')
+const { findAllProducts } = require('../models/repositories/product.repo')
 
 class DiscountService {
   static async createDiscountByShop(payload) {
@@ -59,7 +63,7 @@ class DiscountService {
       })
       .lean()
 
-    if (foundDiscount && foundDiscount.discount_is_active) {
+    if (foundDiscount) {
       throw new BadRequestError('Discount code is exist!')
     }
 
@@ -94,9 +98,6 @@ class DiscountService {
       throw new BadRequestError('Invalid request!')
     }
 
-    if (!payload.discount_type) {
-      throw new BadRequestError('Discount type invalid!')
-    }
     const today = moment(new Date()).unix()
     const endDate = moment(new Date(payload.discount_end_date)).unix()
 
@@ -110,10 +111,80 @@ class DiscountService {
       throw new BadRequestError('Discount start date must be before end date!')
     }
 
-    return await updateDiscountByShop({ payload })
+    if (payload.discount_code) {
+      const isExistDiscountCode = await checkDiscountCodeIsExist({
+        discount_code: payload.discount_code,
+        _id: payload._id,
+      })
+
+      if (isExistDiscountCode) {
+        throw new BadRequestError(
+          'This discount code is exist, please try another code!',
+        )
+      }
+    }
+
+    const discountUpdated = await updateDiscountByShop({ payload })
+    if (!discountUpdated) {
+      throw new BadRequestError('Dícount update failed!')
+    }
+
+    return discountUpdated
   }
 
-  static async getProductsOfDiscount({ discount_code }) {}
+  static async getProductsShopOfDiscount({
+    shopId,
+    discountCode,
+    limit = 50,
+    page = 1,
+    sort = 'ctime',
+    select = ['product_name', 'product_price', 'product_thumb'],
+  }) {
+    const discountFound = await discountModel
+      .findOne({
+        discount_shopId: shopId,
+        discount_code: discountCode,
+      })
+      .lean()
+
+    if (!discountFound) {
+      throw new NotFoundError('Discount not found!')
+    }
+    const today = moment(new Date()).unix()
+    const endDate = moment(new Date(discountFound.discount_end_date)).unix()
+
+    const startDate = moment(new Date(discountFound.discount_start_date)).unix()
+
+    if (today > endDate || today < startDate) {
+      throw new BadRequestError('Discount is expired!')
+    }
+
+    let filter = {}
+    if (discountFound.discount_applies_to === APPLICABLE_PRODUCTS.ALL) {
+      filter = {
+        isPublish: true,
+        product_shop: shopId,
+      }
+    } else if (
+      discountFound.discount_applies_to === APPLICABLE_PRODUCTS.SPECIFIC
+    ) {
+      filter = {
+        isPublish: true,
+        product_shop: convertToMongoObjectId(shopId),
+        _id: {
+          $in: discountFound.discount_products_ids,
+        },
+      }
+    }
+
+    return await findAllProducts({
+      limit,
+      page,
+      filter,
+      sort,
+      select,
+    })
+  }
 }
 
 module.exports = DiscountService

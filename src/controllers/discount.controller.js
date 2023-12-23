@@ -25,6 +25,18 @@ class DiscountController {
       }),
     }).send(res)
   }
+
+  async getProductsShopOfDiscount(req, res, next) {
+    const { _limit, _page, ...query } = req.query
+
+    new SuccessResponse({
+      metadata: await DiscountService.getProductsShopOfDiscount({
+        ...query,
+        limit: _limit,
+        page: _page,
+      }),
+    }).send(res)
+  }
 }
 
 module.exports = new DiscountController()

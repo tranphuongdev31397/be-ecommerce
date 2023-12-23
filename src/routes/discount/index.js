@@ -6,6 +6,11 @@ const { authenticateV2 } = require('../../auth/authUltils')
 const discountController = require('../../controllers/discount.controller')
 const router = express.Router()
 
+router.get(
+  '/getProductsShopOfDiscount',
+  asyncHandler(discountController.getProductsShopOfDiscount),
+)
+
 ///----*---Authenticate---*---///
 router.use(authenticateV2)
 

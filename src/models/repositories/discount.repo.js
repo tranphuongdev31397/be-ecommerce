@@ -24,6 +24,26 @@ const updateDiscountByShop = async ({
   )
 }
 
+const checkDiscountCodeIsExist = async ({
+  discount_code,
+  _id,
+  isUpdate = true,
+}) => {
+  // Func check when update an discount
+
+  const filter = {
+    discount_code,
+    _id: { $ne: convertToMongoObjectId(_id) },
+  }
+
+  if (!isUpdate) {
+    delete filter._id
+  }
+
+  return await discountModel.findOne(filter).lean()
+}
+
 module.exports = {
   updateDiscountByShop,
+  checkDiscountCodeIsExist,
 }
