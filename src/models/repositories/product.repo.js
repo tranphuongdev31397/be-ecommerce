@@ -114,8 +114,7 @@ const updateProductByShop = async ({
       product_shop: new Types.ObjectId(shopId),
     },
     payload,
-    { new: isNew },
-    { ...options },
+    { new: isNew, ...options },
   )
 
   return res

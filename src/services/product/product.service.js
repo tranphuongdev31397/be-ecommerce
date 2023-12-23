@@ -2,7 +2,7 @@
 
 const { isEmpty } = require('lodash')
 const PRODUCT_TYPE = require('../../constants/product')
-const { BadRequestError, NotFoundError } = require('../../core/error.response')
+const { BadRequestError } = require('../../core/error.response')
 const {
   productModel,
   productClothingModel,
@@ -12,11 +12,7 @@ const {
 const {
   updateProductByShop,
 } = require('../../models/repositories/product.repo')
-const {
-  removeUndefinedAndNullNestedObject,
-  getInitData,
-  omitData,
-} = require('../../utils')
+
 const { insertInventory } = require('../../models/repositories/inventory.repo')
 
 class ProductService {
