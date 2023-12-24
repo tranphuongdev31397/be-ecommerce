@@ -54,7 +54,7 @@ const checkDiscountCodeIsExist = async ({
 
   const filter = {
     discount_code,
-    discount_shop: convertToMongoObjectId(shopId),
+    discount_shopId: convertToMongoObjectId(shopId),
     _id: { $ne: convertToMongoObjectId(_id) },
   }
 
@@ -63,7 +63,7 @@ const checkDiscountCodeIsExist = async ({
   }
 
   if (isDiscountGlobal) {
-    delete filter.discount_shop
+    delete filter.discount_shopId
   }
 
   return await discountModel.findOne(filter).lean()
