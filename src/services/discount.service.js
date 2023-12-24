@@ -116,6 +116,7 @@ class DiscountService {
       const isExistDiscountCode = await checkDiscountCodeIsExist({
         discount_code: payload.discount_code,
         _id: payload._id,
+        shopId: payload.discount_shopId,
         isDiscountGlobal: false,
       })
 
