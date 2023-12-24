@@ -46,19 +46,18 @@ const checkDiscountCodeIsExist = async ({
 }) => {
   // Func check when update an discount
 
+  if (!isDiscountGlobal && !shopId) {
+    throw new BadRequestError(
+      'This discount belongs to shop, please provide shopId!',
+    )
+  }
+
   const filter = {
     discount_code,
     discount_shop: convertToMongoObjectId(shopId),
     _id: { $ne: convertToMongoObjectId(_id) },
   }
 
-  if (isUpdate && !_id) {
-    return null
-  }
-
-  if (!isDiscountGlobal && !discount_shop) {
-    return null
-  }
   if (!isUpdate) {
     delete filter._id
   }
