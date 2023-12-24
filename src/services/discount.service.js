@@ -7,6 +7,7 @@ const { convertToMongoObjectId } = require('../utils')
 const {
   updateDiscountByShop,
   checkDiscountCodeIsExist,
+  findAllDiscount,
 } = require('../models/repositories/discount.repo')
 const { findAllProducts } = require('../models/repositories/product.repo')
 
@@ -115,6 +116,7 @@ class DiscountService {
       const isExistDiscountCode = await checkDiscountCodeIsExist({
         discount_code: payload.discount_code,
         _id: payload._id,
+        isDiscountGlobal: false,
       })
 
       if (isExistDiscountCode) {
@@ -184,6 +186,27 @@ class DiscountService {
       sort,
       select,
     })
+  }
+
+  static async getAllDiscountOfShop({
+    shopId,
+    limit = 50,
+    page = 1,
+    sort = 'ctime',
+    select = [
+      'discount_code',
+      'discount_name',
+      'discount_description',
+      'discount_min_order_value',
+      'discount_type',
+      'discount_applies_to',
+    ],
+  }) {
+    const filter = {
+      discount_shopId: convertToMongoObjectId(shopId),
+      discount_is_active: true,
+    }
+    return await findAllDiscount({ limit, page, sort, filter, select })
   }
 }
 

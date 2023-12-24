@@ -11,6 +11,11 @@ router.get(
   asyncHandler(discountController.getProductsShopOfDiscount),
 )
 
+router.get(
+  '/getAllDiscountOfShop',
+  asyncHandler(discountController.getAllDiscountOfShop),
+)
+
 ///----*---Authenticate---*---///
 router.use(authenticateV2)
 
