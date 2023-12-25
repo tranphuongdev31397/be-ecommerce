@@ -223,6 +223,10 @@ class DiscountService {
       discount_code: code,
     })
 
+    if (shopId === userId) {
+      throw new BadRequestError("Can't use your shop's discount")
+    }
+
     const {
       discount_applies_to,
       discount_products_ids,
