@@ -3,13 +3,18 @@ const moment = require('moment')
 const { APPLICABLE_PRODUCTS, DISCOUNT_TYPE } = require('../constants/discount')
 const { BadRequestError, NotFoundError } = require('../core/error.response')
 const discountModel = require('../models/discount.model')
-const { convertToMongoObjectId } = require('../utils')
+const {
+  convertToMongoObjectId,
+  checkExpiredDate,
+  countOccurrencesByKey,
+} = require('../utils')
 const {
   updateDiscountByShop,
   checkDiscountCodeIsExist,
   findAllDiscount,
 } = require('../models/repositories/discount.repo')
 const { findAllProducts } = require('../models/repositories/product.repo')
+const { filter, includes, reduce } = require('lodash')
 
 class DiscountService {
   static async createDiscountByShop(payload) {
@@ -208,6 +213,106 @@ class DiscountService {
       discount_is_active: true,
     }
     return await findAllDiscount({ limit, page, sort, filter, select })
+  }
+
+  static async applyDiscount({ products, code, shopId, userId }) {
+    const foundDiscount = await checkDiscountCodeIsExist({
+      isUpdate: false,
+      isDiscountGlobal: false,
+      shopId,
+      discount_code: code,
+    })
+
+    const {
+      discount_applies_to,
+      discount_products_ids,
+      discount_min_order_value,
+      discount_is_active,
+      discount_end_date,
+      discount_start_date,
+      discount_max_uses_per_user,
+      discount_users_used,
+      discount_max_uses,
+      discount_uses_count,
+      discount_type,
+      discount_max_value,
+      discount_value,
+    } = foundDiscount || {}
+
+    if (!foundDiscount || !discount_is_active) {
+      throw new NotFoundError('Discount not exist!')
+    }
+
+    const isExpired = checkExpiredDate({
+      start_date: discount_start_date,
+      end_date: discount_end_date,
+    })
+
+    if (isExpired) {
+      throw new BadRequestError('Discount is expired')
+    }
+
+    if (discount_uses_count >= discount_max_uses) {
+      throw new BadRequestError('The number of discount codes has expired')
+    }
+    // Check amount use per user
+
+    if (discount_max_uses_per_user) {
+      const countUserUsed = countOccurrencesByKey(discount_users_used)
+
+      const currentUserUsed = countUserUsed[userId]
+
+      if (currentUserUsed >= discount_max_uses_per_user) {
+        throw new BadRequestError('You have used the maximum discount code')
+      }
+    }
+
+    let productsCartUpdate = [...products]
+
+    if (discount_applies_to === APPLICABLE_PRODUCTS.SPECIFIC) {
+      productsCartUpdate = filter(products, product => {
+        return includes(discount_products_ids, product.id)
+      })
+      if (productsCartUpdate.length === 0) {
+        throw new BadRequestError(
+          `No products were found in the cart that could use this discount code`,
+        )
+      }
+    }
+
+    //Reduce total price cart
+
+    const totalOrderValue = reduce(
+      productsCartUpdate,
+      (prev, acc) => {
+        prev + acc.product_price * acc.product_quantity
+      },
+      0,
+    )
+
+    if (totalOrderValue < discount_min_order_value) {
+      throw new BadRequestError(
+        'The total order value for which the discount code is applied is not enough',
+      )
+    }
+
+    // Check amount discount
+
+    let amount =
+      discount_type === DISCOUNT_TYPE.FIXED_VALUE
+        ? discount_value
+        : totalOrderValue * (discount_value / 100)
+
+    if (amount > discount_max_value) {
+      amount = discount_max_value
+    }
+
+    return {
+      productsApplied: productsCartUpdate,
+      amount,
+      totalOrderValue,
+      totalPrice: totalOrderValue - amount,
+    }
   }
 }
 

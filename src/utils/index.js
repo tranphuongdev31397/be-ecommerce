@@ -58,6 +58,27 @@ function removeUndefinedAndNullNestedObject(obj) {
   })
 }
 
+function checkExpiredDate({ start_date, end_date }) {
+  const today = moment(new Date()).unix()
+  const endDate = moment(new Date(start_date)).unix()
+
+  const startDate = moment(new Date(end_date)).unix()
+
+  return !!(today > endDate || today < startDate)
+}
+
+function countOccurrencesByKey(array, key) {
+  const counts = {}
+
+  _.forEach(array, (value, i) => {
+    const element = value?.[key] || value
+
+    counts[element] = (counts?.[element] || 0) + 1
+  })
+
+  return counts
+}
+
 module.exports = {
   getInitData,
   omitData,
@@ -65,4 +86,6 @@ module.exports = {
   getUnselectData,
   removeUndefinedAndNullNestedObject,
   convertToMongoObjectId,
+  checkExpiredDate,
+  countOccurrencesByKey,
 }

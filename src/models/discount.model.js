@@ -45,7 +45,7 @@ const discountSchema = new Schema(
     discount_max_uses: {
       type: Number,
       required: true,
-      default: 0,
+      default: 20,
     },
     discount_uses_count: {
       type: Number,
