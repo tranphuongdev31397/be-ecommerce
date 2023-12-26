@@ -22,5 +22,6 @@ router.use(authenticateV2)
 router.post('/create', asyncHandler(discountController.createDiscountByShop))
 
 router.patch('/update', asyncHandler(discountController.updateDiscountByShop))
+router.post('/applyCode', asyncHandler(discountController.applyDiscountCode))
 
 module.exports = router

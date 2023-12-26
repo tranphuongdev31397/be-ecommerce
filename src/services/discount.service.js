@@ -275,7 +275,7 @@ class DiscountService {
 
     if (discount_applies_to === APPLICABLE_PRODUCTS.SPECIFIC) {
       productsCartUpdate = filter(products, product => {
-        return includes(discount_products_ids, product.id)
+        return includes(discount_products_ids, product._id)
       })
       if (productsCartUpdate.length === 0) {
         throw new BadRequestError(
@@ -286,10 +286,12 @@ class DiscountService {
 
     //Reduce total price cart
 
+    // TODO : Need check Product in cart is public and get price
+
     const totalOrderValue = reduce(
       productsCartUpdate,
       (prev, acc) => {
-        prev + acc.product_price * acc.product_quantity
+        return prev + acc.product_price * acc.product_quantity
       },
       0,
     )

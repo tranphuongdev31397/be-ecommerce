@@ -2,6 +2,7 @@
 
 const _ = require('lodash')
 const { Types } = require('mongoose')
+const moment = require('moment')
 
 const getInitData = ({ fields = [], object = {} }) => {
   return _.pick(object, fields)
@@ -41,9 +42,9 @@ function removeUndefinedAndNullNestedObject(obj) {
 
 function checkExpiredDate({ start_date, end_date }) {
   const today = moment(new Date()).unix()
-  const endDate = moment(new Date(start_date)).unix()
+  const endDate = moment(new Date(end_date)).unix()
 
-  const startDate = moment(new Date(end_date)).unix()
+  const startDate = moment(new Date(start_date)).unix()
 
   return !!(today > endDate || today < startDate)
 }

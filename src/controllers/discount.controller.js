@@ -38,7 +38,7 @@ class DiscountController {
     }).send(res)
   }
 
-  getAllDiscountOfShop = async (req, res, next) => {
+  async getAllDiscountOfShop(req, res, next) {
     const { _limit, _page, sort, select, shopId } = req.query
     new SuccessResponse({
       metadata: await DiscountService.getAllDiscountOfShop({
@@ -48,6 +48,18 @@ class DiscountController {
         // Pagination
         limit: _limit,
         page: _page,
+      }),
+    }).send(res)
+  }
+
+  async applyDiscountCode(req, res, next) {
+    const body = req.body
+
+    new SuccessResponse({
+      message: 'Applied discount code!',
+      metadata: await DiscountService.applyDiscount({
+        ...body,
+        userId: req.user.userId,
       }),
     }).send(res)
   }
