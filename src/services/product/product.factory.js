@@ -46,11 +46,12 @@ class ProductFactory {
 
   static async searchProductByUser({ keySearch, limit = 50, skip = 0 }) {
     if (!keySearch) {
-      // TODO: Replace by findAllProduct
-      return await findAllProductsForShop({
-        query: { isPublish: true },
+      return await findAllProducts({
+        filter: { isPublish: true },
         limit,
-        skip,
+        page: Math.floor(skip / limit),
+        sort: 'ctime',
+        select: ['product_name', 'product_price', 'product_thumb'],
       })
     }
     return await searchProductByUser({
