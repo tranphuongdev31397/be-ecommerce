@@ -13,8 +13,11 @@ const {
   checkDiscountCodeIsExist,
   findAllDiscount,
 } = require('../models/repositories/discount.repo')
-const { findAllProducts } = require('../models/repositories/product.repo')
-const { filter, includes, reduce } = require('lodash')
+const {
+  findAllProducts,
+  findManyProductsById,
+} = require('../models/repositories/product.repo')
+const { filter, includes, reduce, map, find } = require('lodash')
 
 class DiscountService {
   static async createDiscountByShop(payload) {
@@ -285,13 +288,25 @@ class DiscountService {
     }
 
     //Reduce total price cart
-
-    // TODO : Need check Product in cart is public and get price
+    const productsFound = await findManyProductsById({
+      productIds: map(productsCartUpdate, product => product._id),
+      select: ['product_price', '_id'], // get product_discount_price if have
+    })
+    if (productsFound.length !== productsCartUpdate.length) {
+      // Have product is unpublish in cart or products not found in db
+      throw new BadRequestError(
+        'Something when wrong, please check again cart!',
+      )
+    }
 
     const totalOrderValue = reduce(
       productsCartUpdate,
       (prev, acc) => {
-        return prev + acc.product_price * acc.product_quantity
+        const product = find(
+          productsFound,
+          item => item._id.toString() === acc._id,
+        )
+        return prev + product.product_price * acc.product_quantity
       },
       0,
     )

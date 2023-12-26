@@ -3,7 +3,12 @@
 const { Types } = require('mongoose')
 const { BadRequestError } = require('../../core/error.response')
 const { productModel } = require('../product.model')
-const { getSelectData, getUnselectData } = require('../../utils')
+const {
+  getSelectData,
+  getUnselectData,
+  convertToMongoObjectId,
+} = require('../../utils')
+const { map } = require('lodash')
 
 const findAllProductsForShop = ({ query, limit, skip }) => {
   return productModel
@@ -24,6 +29,23 @@ const findAllProducts = async ({ limit, page, sort, filter, select }) => {
     .sort(sortBy)
     .skip(skip)
     .limit(limit)
+    .select(getSelectData(select))
+    .lean()
+}
+
+const findManyProductsById = async ({
+  productIds,
+  select,
+  isPublish = true,
+}) => {
+  const productObjectIds = map(productIds, ids => convertToMongoObjectId(ids))
+  return await productModel
+    .find({
+      isPublish: isPublish,
+      _id: {
+        $in: productObjectIds,
+      },
+    })
     .select(getSelectData(select))
     .lean()
 }
@@ -128,4 +150,5 @@ module.exports = {
   findAllProducts,
   getDetailProduct,
   updateProductByShop,
+  findManyProductsById,
 }
