@@ -328,6 +328,28 @@ class DiscountService {
       amount = discount_max_value
     }
 
+    // Should be update discount : discount_count_uses + 1  and push user into user_used
+
+    const updatedDiscount = await discountModel.findOneAndUpdate(
+      {
+        discount_code: code,
+        discount_shopId: convertToMongoObjectId(shopId),
+      },
+      {
+        $push: {
+          discount_users_used: userId,
+        },
+        $inc: {
+          discount_uses_count: 1,
+        },
+      },
+      {
+        new: true,
+      },
+    )
+    if (!updatedDiscount) {
+      throw new BadRequestError('Apply discount failed, please try again!')
+    }
     return {
       productsApplied: productsCartUpdate,
       amount,
