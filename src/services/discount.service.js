@@ -219,16 +219,16 @@ class DiscountService {
   }
 
   static async applyDiscount({ products, code, shopId, userId }) {
+    if (shopId === userId) {
+      throw new BadRequestError("Can't use your shop's discount")
+    }
+
     const foundDiscount = await checkDiscountCodeIsExist({
       isUpdate: false,
       isDiscountGlobal: false,
       shopId,
       discount_code: code,
     })
-
-    if (shopId === userId) {
-      throw new BadRequestError("Can't use your shop's discount")
-    }
 
     const {
       discount_applies_to,
@@ -356,6 +356,49 @@ class DiscountService {
       totalOrderValue,
       totalPrice: totalOrderValue - amount,
     }
+  }
+
+  static async cancelDiscount({ code, shopId, userId }) {
+    const foundDiscount = await checkDiscountCodeIsExist({
+      isUpdate: false,
+      isDiscountGlobal: false,
+      shopId,
+      discount_code: code,
+    })
+
+    /**
+     *  TODO: check again condition to cancel discount:
+     *  - UserId cancel not contain in user_used ?
+     *  - use count recently = 0 ?
+     *  - expired should be pass cancel ?
+     *  - exist discount should be pass cancel ?
+     */
+
+    if (!foundDiscount?.discount_is_active) {
+      throw new NotFoundError('Discount not exist!')
+    }
+
+    const cancelUpdate = await discountModel.findOneAndUpdate(
+      {
+        discount_code: code,
+        discount_shopId: convertToMongoObjectId(shopId),
+      },
+      {
+        $inc: {
+          discount_max_uses: -1,
+        },
+        $pull: {
+          discount_users_used: userId,
+        },
+      },
+    )
+
+    if (!cancelUpdate) {
+      throw new BadRequestError(
+        'Something went wrong in the cancelation process, please try again!',
+      )
+    }
+    return null
   }
 }
 
