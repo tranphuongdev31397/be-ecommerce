@@ -23,5 +23,6 @@ router.post('/create', asyncHandler(discountController.createDiscountByShop))
 
 router.patch('/update', asyncHandler(discountController.updateDiscountByShop))
 router.post('/applyCode', asyncHandler(discountController.applyDiscountCode))
+router.post('/cancel', asyncHandler(discountController.cancelDiscountCode))
 
 module.exports = router

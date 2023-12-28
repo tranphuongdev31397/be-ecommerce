@@ -63,6 +63,17 @@ class DiscountController {
       }),
     }).send(res)
   }
+  async cancelDiscountCode(req, res, next) {
+    const body = req.body
+
+    new SuccessResponse({
+      message: 'Canceled discount code!',
+      metadata: await DiscountService.cancelDiscount({
+        ...body,
+        userId: req.user.userId,
+      }),
+    }).send(res)
+  }
 }
 
 module.exports = new DiscountController()

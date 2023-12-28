@@ -382,14 +382,19 @@ class DiscountService {
       {
         discount_code: code,
         discount_shopId: convertToMongoObjectId(shopId),
+        discount_users_used: userId,
       },
       {
-        $inc: {
-          discount_max_uses: -1,
-        },
         $pull: {
           discount_users_used: userId,
         },
+
+        $inc: {
+          discount_uses_count: -1,
+        },
+      },
+      {
+        new: true,
       },
     )
 
@@ -398,7 +403,7 @@ class DiscountService {
         'Something went wrong in the cancelation process, please try again!',
       )
     }
-    return null
+    return cancelUpdate
   }
 }
 
