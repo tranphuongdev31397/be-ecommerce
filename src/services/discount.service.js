@@ -1,7 +1,11 @@
 'use strict'
 const moment = require('moment')
 const { APPLICABLE_PRODUCTS, DISCOUNT_TYPE } = require('../constants/discount')
-const { BadRequestError, NotFoundError } = require('../core/error.response')
+const {
+  BadRequestError,
+  NotFoundError,
+  AuthFailError,
+} = require('../core/error.response')
 const discountModel = require('../models/discount.model')
 const {
   convertToMongoObjectId,
@@ -414,6 +418,23 @@ class DiscountService {
       )
     }
     return cancelUpdate
+  }
+
+  static async deleteDiscount({ id, shopId }) {
+    console.log(':::ID', id)
+    console.log('firs', shopId)
+    if (!shopId) {
+      throw new BadRequestError('Invalid request!')
+    }
+
+    const deletedResponse = await discountModel.findOneAndDelete({
+      _id: convertToMongoObjectId(id),
+      discount_shopId: convertToMongoObjectId(shopId),
+    })
+    if (!deletedResponse) {
+      throw new NotFoundError('Discount not found to delete!')
+    }
+    return deletedResponse
   }
 }
 

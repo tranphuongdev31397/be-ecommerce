@@ -74,6 +74,19 @@ class DiscountController {
       }),
     }).send(res)
   }
+
+  async deleteDiscountByShop(req, res, next) {
+    const shopId = req.user.userId
+    const id = req.params.id
+
+    new SuccessResponse({
+      message: 'Discount deleted!',
+      metadata: await DiscountService.deleteDiscount({
+        id,
+        shopId,
+      }),
+    }).send(res)
+  }
 }
 
 module.exports = new DiscountController()

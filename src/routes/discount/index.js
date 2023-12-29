@@ -24,5 +24,9 @@ router.post('/create', asyncHandler(discountController.createDiscountByShop))
 router.patch('/update', asyncHandler(discountController.updateDiscountByShop))
 router.post('/applyCode', asyncHandler(discountController.applyDiscountCode))
 router.post('/cancel', asyncHandler(discountController.cancelDiscountCode))
+router.delete(
+  '/deleteByShop/:id',
+  asyncHandler(discountController.deleteDiscountByShop),
+)
 
 module.exports = router
