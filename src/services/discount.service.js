@@ -421,8 +421,6 @@ class DiscountService {
   }
 
   static async deleteDiscount({ id, shopId }) {
-    console.log(':::ID', id)
-    console.log('firs', shopId)
     if (!shopId) {
       throw new BadRequestError('Invalid request!')
     }
