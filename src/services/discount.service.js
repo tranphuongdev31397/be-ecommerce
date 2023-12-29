@@ -378,15 +378,25 @@ class DiscountService {
       throw new NotFoundError('Discount not exist!')
     }
 
+    const firstIndex = foundDiscount.discount_users_used.indexOf(userId)
+
+    const updateUserUsed = [...foundDiscount.discount_users_used].slice(
+      firstIndex,
+      -1,
+    )
+
+    if (firstIndex === -1) {
+      throw new BadRequestError('You not use discount code before')
+    }
+
     const cancelUpdate = await discountModel.findOneAndUpdate(
       {
         discount_code: code,
         discount_shopId: convertToMongoObjectId(shopId),
-        discount_users_used: userId,
       },
       {
-        $pull: {
-          discount_users_used: userId,
+        $set: {
+          discount_users_used: updateUserUsed,
         },
 
         $inc: {
