@@ -22,16 +22,18 @@ class CartService {
     })
   }
 
-  static async updateQuantityProduct({ product, userCart, isAddOne }) {
+  static async updateQuantityProduct({ product, userId }) {
     const { id, quantity } = product
-    const cartUpdated = userCart.findOneAndUpdate(
+
+    const cartUpdated = await cartModel.findOneAndUpdate(
       {
         'cart_products.id': id,
+        cart_userId: convertToMongoObjectId(userId),
       },
       {
-        'cart_products.$.quantity': isAddOne
-          ? 1
-          : 'cart_products.$.quantity' - quantity,
+        $inc: {
+          'cart_products.$.quantity': quantity,
+        },
       },
       {
         new: true,
@@ -42,10 +44,11 @@ class CartService {
       throw new BadRequestError('Update quantity failed!')
     }
 
-    console.log(cartUpdated)
+    // TODO: Need delete product if quantity res <= 0
+    return cartUpdated
   }
 
-  static async updateCart({ userId, product, isAddOne }) {
+  static async updateCart({ userId, product }) {
     let _cart = await cartModel.findOne({
       cart_userId: convertToMongoObjectId(userId),
     })
@@ -81,8 +84,7 @@ class CartService {
     } else {
       return await CartService.updateQuantityProduct({
         product,
-        isAddOne,
-        userCart: _cart,
+        userId,
       })
     }
   }
