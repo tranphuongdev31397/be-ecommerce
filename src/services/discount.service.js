@@ -1,11 +1,7 @@
 'use strict'
 const moment = require('moment')
 const { APPLICABLE_PRODUCTS, DISCOUNT_TYPE } = require('../constants/discount')
-const {
-  BadRequestError,
-  NotFoundError,
-  AuthFailError,
-} = require('../core/error.response')
+const { BadRequestError, NotFoundError } = require('../core/error.response')
 const discountModel = require('../models/discount.model')
 const {
   convertToMongoObjectId,
