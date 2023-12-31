@@ -98,9 +98,11 @@ class CartService {
       )
     }
 
-    let _cart = await cartModel.findOne({
-      cart_userId: convertToMongoObjectId(userId),
-    })
+    let _cart = await cartModel
+      .findOne({
+        cart_userId: convertToMongoObjectId(userId),
+      })
+      .lean()
 
     if (!_cart) {
       _cart = await CartService.createCart({
