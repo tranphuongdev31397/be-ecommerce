@@ -1,15 +1,11 @@
 'use strict'
 
-const { some } = require('lodash')
+const { find } = require('lodash')
 const { BadRequestError, NotFoundError } = require('../core/error.response')
 const cartModel = require('../models/cart.model')
 const { getDetailProduct } = require('../models/repositories/product.repo')
 const shopModel = require('../models/shop.model')
-const {
-  convertToMongoObjectId,
-  getSelectData,
-  getInitData,
-} = require('../utils')
+const { convertToMongoObjectId } = require('../utils')
 
 class CartService {
   static async createCart({ userId }) {
@@ -32,7 +28,7 @@ class CartService {
       },
 
       {
-        $set: {
+        $inc: {
           'cart_products.$.quantity': quantity,
         },
       },
@@ -47,11 +43,61 @@ class CartService {
       throw new BadRequestError('Update quantity failed!')
     }
 
-    // TODO: Need delete product if quantity res <= 0
     return cartUpdated
   }
 
-  static async updateCart({ userId, product }) {
+  static async addProductToCart({ product, userId }) {
+    return await cartModel.findOneAndUpdate(
+      {
+        cart_userId: convertToMongoObjectId(userId),
+      },
+      {
+        $push: {
+          cart_products: product,
+        },
+      },
+      {
+        new: true,
+      },
+    )
+  }
+
+  static async removeProductFromCart({ userId, productId }) {
+    return await cartModel.findOneAndUpdate(
+      {
+        cart_userId: convertToMongoObjectId(userId),
+      },
+      {
+        $pull: {
+          cart_products: {
+            id: productId,
+          },
+        },
+      },
+      {
+        new: true,
+      },
+    )
+  }
+
+  static async updateCart({ userId, product, isAdd }) {
+    /**
+     * How to use:
+     * FE send payload product:
+     * {
+     * id: product_id
+     * quantity: quantity currently from FE
+     * }
+     * isAdd: if "true" quantity is equal incQuantity
+     */
+    // Validate
+
+    if (product.quantity < 0) {
+      throw new BadRequestError(
+        "Something went wrong, quantity can't less than 0",
+      )
+    }
+
     let _cart = await cartModel.findOne({
       cart_userId: convertToMongoObjectId(userId),
     })
@@ -75,39 +121,52 @@ class CartService {
       throw new BadRequestError("Can't buy your shop's product")
     }
 
-    if (product.quantity <= 0) {
-      return await _cart.updateOne(
-        {
-          $pull: {
-            cart_products: {
-              id: product.id,
-            },
-          },
-        },
-        {
-          new: true,
-        },
-      )
+    const currentProductInCart = find(
+      _cart.cart_products,
+      it => product.id === it.id,
+    )
+
+    if (!currentProductInCart) {
+      // Push new product in cart if product hasn't in current cart
+      const result = await CartService.addProductToCart({ product, userId })
+
+      if (!result) {
+        throw new BadRequestError('Something went wrong, please try again')
+      }
+
+      return result
+    }
+    const incQuantity = isAdd
+      ? product.quantity
+      : product.quantity - currentProductInCart.quantity
+
+    const quantityAfterUpdate = currentProductInCart.quantity + incQuantity
+
+    if (incQuantity === 0) {
+      return _cart
     }
 
-    if (!some(_cart.cart_products, it => product.id === it.id)) {
-      return await _cart.updateOne(
-        {
-          $push: {
-            cart_products: product,
-          },
-        },
-        {
-          new: true,
-        },
-      )
-    } else {
-      // Quantity > 0 && product available
-      return await CartService.updateQuantityProduct({
-        product,
+    if (quantityAfterUpdate <= 0) {
+      // Remove product
+      const removeResult = await CartService.removeProductFromCart({
         userId,
+        productId: product.id,
       })
+
+      if (!removeResult) {
+        throw new NotFoundError('Something went wrong, please try again!')
+      }
+      return removeResult
     }
+
+    // incQuantity > 0 && product available
+    return await CartService.updateQuantityProduct({
+      product: {
+        id: product.id,
+        quantity: incQuantity,
+      },
+      userId,
+    })
   }
 }
 
